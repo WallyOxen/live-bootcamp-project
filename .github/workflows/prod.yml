@@ -78,21 +78,26 @@ jobs:
         username: ${{ secrets.DOCKER_USERNAME }}
         password: ${{ secrets.DOCKER_PASSWORD }}
 
-    - name: Install sshpass
-      run: sudo apt-get install sshpass
+    - name: Set up SSH Key path
+      run: |
+        mkdir -p ~/.ssh
+        echo "${{ secrets.AWS_KEY }}" > ~/.ssh/id_rsa
+        chmod 600 ~/.ssh/id_rsa
+        ssh-keyscan -H ${{ vars.AWS_IP }} >> ~/.ssh/known_hosts
 
-    - name: Copy compose.yml to droplet
-      run: sshpass -v -p '${{ secrets.DROPLET_PASSWORD }}' scp -o StrictHostKeyChecking=no compose.yml root@${{ vars.DROPLET_IP }}:~
+    - name: Copy compose.yml via scp
+      run: |
+        scp -i ~/.ssh/id_rsa -o StrictHostKeyChecking=no compose.yml lgr@${{ vars.AWS_IP}}:~/live-accelerator
 
     - name: Deploy
       uses: appleboy/ssh-action@master
       with:
-        host: ${{ vars.DROPLET_IP }}
-        username: root
-        password: ${{ secrets.DROPLET_PASSWORD }}
+        host: ${{ vars.AWS_IP }}
+        username: lgr
+        key: ${{ secrets.AWS_KEY }}
         script: |
-          cd ~
-          export AUTH_SERVICE_IP=${{ vars.DROPLET_IP }}
+          cd ~/live-accelerator
+          export AUTH_SERVICE_IP=${{ vars.AWS_IP }}
           docker compose down
           docker compose pull
           docker compose up -d
