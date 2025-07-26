@@ -3,7 +3,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::{
     app_state::AppState,
-    domain::{error::AuthAPIError, user::User},
+    domain::{email::Email, error::AuthAPIError, user::User},
 };
 
 pub async fn signup(
@@ -13,31 +13,25 @@ pub async fn signup(
     let email = request.email;
     let password = request.password;
 
-    if email.len() < 8 || !email.contains("@") {
+    if let Ok(user) = User::parse(email.clone(), password, request.requires_2fa) {
+        let mut user_store = state.user_store.write().await;
+
+        if let Ok(_) = user_store.get_user(&Email::parse(email).unwrap()) {
+            return Err(AuthAPIError::UserAlreadyExists);
+        }
+
+        if let Err(_) = user_store.add_user(user) {
+            return Err(AuthAPIError::UnexpectedError);
+        }
+
+        let response = Json(SignupResponse {
+            message: "User created successfully!".to_string(),
+        });
+
+        Ok((StatusCode::CREATED, response))
+    } else {
         return Err(AuthAPIError::InvalidCredentials);
     }
-
-    let user = User {
-        email: email.clone(),
-        password,
-        requires_2fa: request.requires_2fa,
-    };
-
-    let mut user_store = state.user_store.write().await;
-
-    if let Ok(_) = user_store.get_user(email.as_str()) {
-        return Err(AuthAPIError::UserAlreadyExists);
-    }
-
-    if let Err(_) = user_store.add_user(user) {
-        return Err(AuthAPIError::UnexpectedError);
-    }
-
-    let response = Json(SignupResponse {
-        message: "User created successfully!".to_string(),
-    });
-
-    Ok((StatusCode::CREATED, response))
 }
 
 #[derive(Deserialize)]

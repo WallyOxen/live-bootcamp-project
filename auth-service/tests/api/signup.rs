@@ -54,7 +54,7 @@ async fn should_return_201_if_valid_input() {
     let response = app
         .post_signup(&json!({
             "email": random_email,
-            "password": "test123",
+            "password": "test123456",
             "requires2FA": true
         }))
         .await;
@@ -81,12 +81,12 @@ async fn should_return_400_if_invalid_input() {
     let test_cases = [
         json!({
             "email": "testing.com", // No @ email
-            "password": "test123",
+            "password": "test123456",
             "requires2FA": true
         }),
         json!({
             "email": "t@t.com", // Too short
-            "password": "test123",
+            "password": "test123456",
             "requires2FA": true
         }),
     ];
@@ -116,7 +116,7 @@ async fn should_return_409_if_email_already_exists() {
     let app = TestApp::new().await;
     let user = json!({
         "email": "test@test.com",
-        "password": "test123",
+        "password": "test123456",
         "requires2FA": true
     });
 
