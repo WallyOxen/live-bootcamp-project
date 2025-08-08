@@ -2,21 +2,21 @@
 pub struct Password(String);
 
 impl Password {
-    pub fn parse(password: String) -> Result<Self, PasswordParseError> {
-        if password.len() < 8 {
-            return Err(PasswordParseError::PasswordTooShort);
+    pub fn parse(password: String) -> Result<Self, String> {
+        if validate_password(&password) {
+            Ok(Password(password))
+        } else {
+            Err("Failed to parse string to Password type".to_owned())
         }
-        Ok(Password(password))
     }
+}
+
+fn validate_password(s: &str) -> bool {
+    s.len() >= 8
 }
 
 impl AsRef<str> for Password {
     fn as_ref(&self) -> &str {
         self.0.as_ref()
     }
-}
-
-#[derive(Debug)]
-pub enum PasswordParseError {
-    PasswordTooShort,
 }
