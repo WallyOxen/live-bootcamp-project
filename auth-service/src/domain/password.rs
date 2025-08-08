@@ -20,3 +20,20 @@ impl AsRef<str> for Password {
         self.0.as_ref()
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::Password;
+
+    #[test]
+    fn empty_string_is_rejected() {
+        let password = "".to_string();
+        assert!(Password::parse(password).is_err());
+    }
+
+    #[test]
+    fn string_less_than_8_characters_is_rejected() {
+        let password = "1234567".to_string();
+        assert!(Password::parse(password).is_err());
+    }
+}

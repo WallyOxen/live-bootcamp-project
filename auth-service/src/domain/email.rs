@@ -18,3 +18,26 @@ impl AsRef<str> for Email {
         self.0.as_ref()
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::Email;
+
+    #[test]
+    fn empty_string_is_rejected() {
+        let email = "".to_string();
+        assert!(Email::parse(email).is_err());
+    }
+
+    #[test]
+    fn email_missing_at_symbol_is_rejected() {
+        let email = "persondomain.com".to_string();
+        assert!(Email::parse(email).is_err());
+    }
+
+    #[test]
+    fn email_missing_subject_is_rejected() {
+        let email = "@domain.com".to_string();
+        assert!(Email::parse(email).is_err());
+    }
+}

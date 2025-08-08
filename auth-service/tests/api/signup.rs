@@ -85,8 +85,8 @@ async fn should_return_400_if_invalid_input() {
             "requires2FA": true
         }),
         json!({
-            "email": "t@t.com", // Too short
-            "password": "test123456",
+            "email": "t@t.com",
+            "password": "test1", // Too short
             "requires2FA": true
         }),
     ];
