@@ -34,6 +34,7 @@ jobs:
     - name: Build and test app-service code
       working-directory: ./app-service
       run: |
+        export JWT_SECRET=secret
         cargo build --verbose
         cargo test --verbose
 
@@ -97,6 +98,7 @@ jobs:
         key: ${{ secrets.AWS_KEY }}
         script: |
           cd ~/live-accelerator
+          export JWT_SECRET=${{ secrets.JWT_SECRET }}
           export AUTH_SERVICE_IP=${{ vars.AWS_IP }}
           docker compose down
           docker compose pull

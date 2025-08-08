@@ -15,9 +15,10 @@ use app_state::AppState;
 use crate::domain::error::AuthAPIError;
 
 pub mod app_state;
-mod domain;
+pub mod domain;
 pub mod routes;
 pub mod services;
+pub mod utils;
 
 // This struct encapsulates our application-related logic
 pub struct Application {

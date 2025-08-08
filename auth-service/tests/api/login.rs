@@ -1,3 +1,4 @@
+use auth_service::utils::constants::JWT_COOKIE_NAME;
 use serde_json::json;
 
 use crate::helpers::{get_random_email, TestApp};
@@ -96,28 +97,34 @@ async fn should_return_401_if_incorrect_credentials() {
 }
 
 #[tokio::test]
-async fn should_return_200_if_correct_credentials() {
+async fn should_return_200_if_valid_credentials_and_2fa_disabled() {
     let app = TestApp::new().await;
 
     let random_email = get_random_email();
-    let password = "test123456";
 
-    let signup_response = app
-        .post_signup(&json!({
-            "email": random_email,
-            "password": password,
-            "requires2FA": true
-        }))
-        .await;
+    let signup_body = serde_json::json!({
+        "email": random_email,
+        "password": "password123",
+        "requires2FA": false
+    });
 
-    assert_eq!(signup_response.status().as_u16(), 201);
+    let response = app.post_signup(&signup_body).await;
 
-    let login_response = app
-        .post_login(&json!({
-            "email": random_email,
-            "password": password
-        }))
-        .await;
+    assert_eq!(response.status().as_u16(), 201);
 
-    assert_eq!(login_response.status().as_u16(), 200);
+    let login_body = serde_json::json!({
+        "email": random_email,
+        "password": "password123",
+    });
+
+    let response = app.post_login(&login_body).await;
+
+    assert_eq!(response.status().as_u16(), 200);
+
+    let auth_cookie = response
+        .cookies()
+        .find(|cookie| cookie.name() == JWT_COOKIE_NAME)
+        .expect("No auth cookie found");
+
+    assert!(!auth_cookie.value().is_empty());
 }
