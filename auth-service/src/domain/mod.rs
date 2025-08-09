@@ -5,4 +5,5 @@ pub mod password;
 pub mod user;
 
 pub use email::*;
+pub use error::*;
 pub use password::*;
