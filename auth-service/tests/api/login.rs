@@ -18,10 +18,6 @@ async fn should_return_422_if_malformed_credentials() {
             "email": random_email
         }),
         json!({
-            "email": random_email,
-            "password": "password123",
-        }),
-        json!({
             "password": "password123"
         }),
         json!({
@@ -31,7 +27,7 @@ async fn should_return_422_if_malformed_credentials() {
     ];
 
     for test_case in test_cases.iter() {
-        let response = app.post_signup(&test_case).await;
+        let response = app.post_login(&test_case).await;
 
         assert_eq!(
             response.status().as_u16(),
