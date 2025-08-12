@@ -4,7 +4,7 @@ use rand::Rng;
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    app_state::AppState,
+    app_state::{self, AppState},
     domain::{
         data_stores::{LoginAttemptId, TwoFACode},
         error::AuthAPIError,
@@ -66,20 +66,39 @@ async fn handle_2fa(
     let mut two_fa_code_store = state.two_fa_code_store.write().await;
 
     match two_fa_code_store
-        .add_code(email.to_owned(), login_attempt_id.clone(), two_fa_code)
+        .add_code(
+            email.to_owned(),
+            login_attempt_id.clone(),
+            two_fa_code.clone(),
+        )
         .await
     {
         Ok(_) => {
-            return (
-                jar,
-                Ok((
-                    StatusCode::PARTIAL_CONTENT,
-                    axum::Json(LoginResponse::TwoFactorAuth(TwoFactorAuthResponse {
-                        message: "2FA required".to_owned(),
-                        login_attempt_id,
-                    })),
-                )),
-            )
+            match state
+                .email_client
+                .read()
+                .await
+                .send_email(
+                    &email,
+                    "Two Factor Authentication Code",
+                    &format!("Your code is: {:#?}", two_fa_code),
+                )
+                .await
+            {
+                Ok(_) => {
+                    return (
+                        jar,
+                        Ok((
+                            StatusCode::PARTIAL_CONTENT,
+                            axum::Json(LoginResponse::TwoFactorAuth(TwoFactorAuthResponse {
+                                message: "2FA required".to_owned(),
+                                login_attempt_id,
+                            })),
+                        )),
+                    );
+                }
+                Err(_) => return (jar, Err(AuthAPIError::UnexpectedError)),
+            }
         }
         Err(_) => return (jar, Err(AuthAPIError::UnexpectedError)),
     }
