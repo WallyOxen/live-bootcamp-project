@@ -59,7 +59,7 @@ impl LoginAttemptId {
     }
 }
 
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, Serialize, PartialEq)]
 pub struct TwoFACode(String);
 
 impl TwoFACode {

@@ -19,7 +19,7 @@ impl TwoFACodeStore for HashmapTwoFACodeStore {
         code: TwoFACode,
     ) -> Result<(), TwoFACodeStoreError> {
         if self.codes.contains_key(&email) {
-            return Err(TwoFACodeStoreError::UnexpectedError);
+            self.codes.remove(&email);
         }
 
         match self.codes.insert(email, (login_attempt_id, code)) {
