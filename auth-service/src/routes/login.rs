@@ -4,7 +4,7 @@ use rand::Rng;
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    app_state::{self, AppState},
+    app_state::AppState,
     domain::{
         data_stores::{LoginAttemptId, TwoFACode},
         error::AuthAPIError,
