@@ -3,22 +3,22 @@ use std::sync::Arc;
 use auth_service::services::mock_email_client::MockEmailClient;
 use auth_service::services::postgres_user_store::PostgresUserStore;
 use auth_service::services::redis_banned_token_store::RedisBannedTokenStore;
+use auth_service::services::redis_two_fa_code_store::RedisTwoFACodeStore;
 use auth_service::utils::constants::{prod, DATABASE_URL, REDIS_HOST_NAME};
 use auth_service::{get_postgres_pool, get_redis_client, Application};
 use sqlx::PgPool;
 use tokio::sync::RwLock;
 
 use auth_service::app_state::AppState;
-use auth_service::services::hashmap_two_fa_code_store::HashmapTwoFACodeStore;
 
 #[tokio::main]
 async fn main() {
     let pg_pool = configure_postgresql().await;
-    let redis_conn = configure_redis();
+    let redis_conn = Arc::new(RwLock::new(configure_redis()));
 
     let user_store = PostgresUserStore::new(pg_pool);
-    let banned_token_store = RedisBannedTokenStore::new(Arc::new(RwLock::new(redis_conn)));
-    let two_fa_code_store = HashmapTwoFACodeStore::default();
+    let banned_token_store = RedisBannedTokenStore::new(redis_conn.clone());
+    let two_fa_code_store = RedisTwoFACodeStore::new(redis_conn.clone());
     let email_client = MockEmailClient;
     let app_state = AppState {
         user_store: Arc::new(RwLock::new(user_store)),

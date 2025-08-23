@@ -65,6 +65,12 @@ impl LoginAttemptId {
     }
 }
 
+impl AsRef<str> for LoginAttemptId {
+    fn as_ref(&self) -> &str {
+        self.0.as_ref()
+    }
+}
+
 #[derive(Clone, Debug, Serialize, PartialEq)]
 pub struct TwoFACode(String);
 
@@ -74,5 +80,11 @@ impl TwoFACode {
             Ok(_) if code.len() == 6 => Ok(Self(code)),
             _ => Err("Code must be exactly 6 digits".to_owned()),
         }
+    }
+}
+
+impl AsRef<str> for TwoFACode {
+    fn as_ref(&self) -> &str {
+        self.0.as_ref()
     }
 }
