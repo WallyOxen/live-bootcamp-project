@@ -14,23 +14,27 @@ pub struct HashmapUserStore {
 
 #[async_trait::async_trait]
 impl UserStore for HashmapUserStore {
-    fn add_user(&mut self, user: User) -> Result<(), UserStoreError> {
-        if let Ok(_) = self.get_user(&user.email) {
+    async fn add_user(&mut self, user: User) -> Result<(), UserStoreError> {
+        if let Ok(_) = self.get_user(&user.email).await {
             Err(UserStoreError::UserAlreadyExists)
         } else {
             self.users.insert(user.email.clone(), user);
             Ok(())
         }
     }
-    fn get_user(&self, email: &Email) -> Result<User, UserStoreError> {
+    async fn get_user(&self, email: &Email) -> Result<User, UserStoreError> {
         if let Some(user) = self.users.get(email) {
             Ok(user.clone())
         } else {
             Err(UserStoreError::UserNotFound)
         }
     }
-    fn validate_user(&self, email: &Email, password: &Password) -> Result<(), UserStoreError> {
-        if let Ok(user) = self.get_user(email) {
+    async fn validate_user(
+        &self,
+        email: &Email,
+        password: &Password,
+    ) -> Result<(), UserStoreError> {
+        if let Ok(user) = self.get_user(email).await {
             if user.password.eq(password) {
                 Ok(())
             } else {
@@ -54,7 +58,7 @@ mod tests {
             Password::parse("test123456".to_owned()).unwrap(),
             false,
         );
-        let result = user_store.add_user(user);
+        let result = user_store.add_user(user).await;
         assert_eq!(result, Ok(()));
     }
 
@@ -66,7 +70,7 @@ mod tests {
             Password::parse("test123456".to_owned()).unwrap(),
             false,
         );
-        let result = user_store.add_user(user);
+        let result = user_store.add_user(user).await;
         assert_eq!(result, Ok(()));
 
         let user2 = User::new(
@@ -74,7 +78,7 @@ mod tests {
             Password::parse("abc123456".to_owned()).unwrap(),
             true,
         );
-        let result2 = user_store.add_user(user2);
+        let result2 = user_store.add_user(user2).await;
         assert_eq!(result2, Err(UserStoreError::UserAlreadyExists));
     }
 
@@ -83,7 +87,7 @@ mod tests {
         let user_store = HashmapUserStore::default();
         let email = Email::parse("test@test.com".to_owned()).unwrap();
 
-        let result = user_store.get_user(&email);
+        let result = user_store.get_user(&email).await;
         assert_eq!(result, Err(UserStoreError::UserNotFound));
     }
 
@@ -97,8 +101,8 @@ mod tests {
             Password::parse("abc123456".to_owned()).unwrap(),
             true,
         );
-        if let Ok(_) = user_store.add_user(user.clone()) {
-            let result = user_store.get_user(&Email::parse(email).unwrap());
+        if let Ok(_) = user_store.add_user(user.clone()).await {
+            let result = user_store.get_user(&Email::parse(email).unwrap()).await;
             assert_eq!(result, Ok(user));
         }
     }
@@ -113,11 +117,13 @@ mod tests {
             Password::parse(password.clone()).unwrap(),
             false,
         );
-        if let Ok(_) = user_store.add_user(user) {
-            let result = user_store.validate_user(
-                &Email::parse(email).unwrap(),
-                &Password::parse(password).unwrap(),
-            );
+        if let Ok(_) = user_store.add_user(user).await {
+            let result = user_store
+                .validate_user(
+                    &Email::parse(email).unwrap(),
+                    &Password::parse(password).unwrap(),
+                )
+                .await;
             assert_eq!(result, Ok(()));
         }
     }
@@ -132,11 +138,13 @@ mod tests {
             Password::parse(password).unwrap(),
             true,
         );
-        if let Ok(_) = user_store.add_user(user) {
-            let result = user_store.validate_user(
-                &Email::parse(email).unwrap(),
-                &Password::parse("abc654321".to_owned()).unwrap(),
-            );
+        if let Ok(_) = user_store.add_user(user).await {
+            let result = user_store
+                .validate_user(
+                    &Email::parse(email).unwrap(),
+                    &Password::parse("abc654321".to_owned()).unwrap(),
+                )
+                .await;
             assert_eq!(result, Err(UserStoreError::InvalidCredentials));
         }
     }
@@ -151,11 +159,13 @@ mod tests {
             Password::parse(password.clone()).unwrap(),
             true,
         );
-        if let Ok(_) = user_store.add_user(user) {
-            let result = user_store.validate_user(
-                &Email::parse("abc@test.com".to_owned()).unwrap(),
-                &Password::parse(password).unwrap(),
-            );
+        if let Ok(_) = user_store.add_user(user).await {
+            let result = user_store
+                .validate_user(
+                    &Email::parse("abc@test.com".to_owned()).unwrap(),
+                    &Password::parse(password).unwrap(),
+                )
+                .await;
             assert_eq!(result, Err(UserStoreError::UserNotFound));
         }
     }
