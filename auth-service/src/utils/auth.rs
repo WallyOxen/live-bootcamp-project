@@ -164,7 +164,7 @@ mod tests {
     async fn test_validate_token_with_banned_token() {
         let token = "banned_token".to_owned();
         let banned_token_store = Arc::new(RwLock::new(HashsetBannedTokenStore::default()));
-        banned_token_store.write().await.add_token(token.clone());
+        let _ = banned_token_store.write().await.add_token(token.clone());
         let result = validate_token(&token, banned_token_store).await;
         assert!(result.is_err());
     }

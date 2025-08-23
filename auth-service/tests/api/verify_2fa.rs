@@ -9,7 +9,7 @@ use serde_json::json;
 
 #[tokio::test]
 async fn should_return_422_if_malformed_input() {
-    let app = TestApp::new().await;
+    let mut app = TestApp::new().await;
 
     let random_email = get_random_email();
 
@@ -48,11 +48,13 @@ async fn should_return_422_if_malformed_input() {
             test_case
         );
     }
+
+    app.clean_up().await;
 }
 
 #[tokio::test]
 async fn should_return_400_if_invalid_input() {
-    let app = TestApp::new().await;
+    let mut app = TestApp::new().await;
 
     let random_email = get_random_email();
 
@@ -79,11 +81,13 @@ async fn should_return_400_if_invalid_input() {
             test_case
         );
     }
+
+    app.clean_up().await;
 }
 
 #[tokio::test]
 async fn should_return_401_if_incorrect_credentials() {
-    let app = TestApp::new().await;
+    let mut app = TestApp::new().await;
 
     let random_email = get_random_email();
 
@@ -96,11 +100,13 @@ async fn should_return_401_if_incorrect_credentials() {
         .await;
 
     assert_eq!(response.status().as_u16(), 401);
+
+    app.clean_up().await;
 }
 
 #[tokio::test]
 async fn should_return_401_if_old_code() {
-    let app = TestApp::new().await;
+    let mut app = TestApp::new().await;
 
     let random_email = get_random_email();
     let password = "password123";
@@ -148,11 +154,13 @@ async fn should_return_401_if_old_code() {
 
         assert_eq!(response.status().as_u16(), 401);
     }
+
+    app.clean_up().await;
 }
 
 #[tokio::test]
 async fn should_return_200_if_correct_code() {
-    let app = TestApp::new().await;
+    let mut app = TestApp::new().await;
 
     let random_email = get_random_email();
 
@@ -206,11 +214,13 @@ async fn should_return_200_if_correct_code() {
 
         assert!(!auth_cookie.value().is_empty());
     }
+
+    app.clean_up().await;
 }
 
 #[tokio::test]
 async fn should_return_401_if_same_code_twice() {
-    let app = TestApp::new().await;
+    let mut app = TestApp::new().await;
 
     let random_email = get_random_email();
 
@@ -274,4 +284,6 @@ async fn should_return_401_if_same_code_twice() {
 
         assert_eq!(response.status().as_u16(), 401);
     }
+
+    app.clean_up().await;
 }
