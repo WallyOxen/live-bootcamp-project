@@ -63,13 +63,21 @@ pub async fn validate_token(
 ) -> Result<Claims, jsonwebtoken::errors::Error> {
     let banned_token_store_lock = banned_token_store.read().await;
 
-    match banned_token_store_lock.get_token(token.to_string()) {
-        true => {
+    match banned_token_store_lock
+        .contains_token(token.to_string())
+        .await
+    {
+        Ok(true) => {
             return Err(jsonwebtoken::errors::Error::from(
                 jsonwebtoken::errors::ErrorKind::InvalidToken,
             ))
         }
-        false => (),
+        Ok(false) => (),
+        Err(_) => {
+            return Err(jsonwebtoken::errors::Error::from(
+                jsonwebtoken::errors::ErrorKind::ExpiredSignature,
+            ))
+        }
     }
     decode::<Claims>(
         token,

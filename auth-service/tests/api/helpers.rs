@@ -3,13 +3,13 @@ use std::{str::FromStr, sync::Arc};
 use auth_service::{
     app_state::AppState,
     domain::data_stores::{BannedTokenStore, TwoFACodeStore},
-    get_postgres_pool,
+    get_postgres_pool, get_redis_client,
     services::{
         hashmap_two_fa_code_store::HashmapTwoFACodeStore,
         hashset_banned_token_store::HashsetBannedTokenStore, mock_email_client::MockEmailClient,
-        postgres_user_store::PostgresUserStore,
+        postgres_user_store::PostgresUserStore, redis_banned_token_store::RedisBannedTokenStore,
     },
-    utils::constants::{test, DATABASE_URL},
+    utils::constants::{test, DATABASE_URL, REDIS_HOST_NAME},
     Application,
 };
 
@@ -38,8 +38,12 @@ impl TestApp {
         let db_name = Uuid::new_v4().to_string();
 
         let pg_pool = configure_postgresql(db_name.clone()).await;
+        let redis_conn = configure_redis();
+
         let user_store = PostgresUserStore::new(pg_pool);
-        let banned_token_store = Arc::new(RwLock::new(HashsetBannedTokenStore::default()));
+        let banned_token_store = Arc::new(RwLock::new(RedisBannedTokenStore::new(Arc::new(
+            RwLock::new(redis_conn),
+        ))));
         let two_fa_code_store = Arc::new(RwLock::new(HashmapTwoFACodeStore::default()));
         let email_client = Arc::new(RwLock::new(MockEmailClient));
         let app_state = AppState {
@@ -231,4 +235,11 @@ async fn delete_database(db_name: &str) {
 
 pub fn get_random_email() -> String {
     format!("{}@example.com", Uuid::new_v4())
+}
+
+fn configure_redis() -> redis::Connection {
+    get_redis_client(REDIS_HOST_NAME.to_owned())
+        .expect("Failed to get Redis client")
+        .get_connection()
+        .expect("Failed to get redis Connection")
 }
