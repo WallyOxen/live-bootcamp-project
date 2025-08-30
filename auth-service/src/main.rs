@@ -5,6 +5,7 @@ use auth_service::services::postgres_user_store::PostgresUserStore;
 use auth_service::services::redis_banned_token_store::RedisBannedTokenStore;
 use auth_service::services::redis_two_fa_code_store::RedisTwoFACodeStore;
 use auth_service::utils::constants::{prod, DATABASE_URL, REDIS_HOST_NAME};
+use auth_service::utils::tracing::init_tracing;
 use auth_service::{get_postgres_pool, get_redis_client, Application};
 use sqlx::PgPool;
 use tokio::sync::RwLock;
@@ -13,6 +14,8 @@ use auth_service::app_state::AppState;
 
 #[tokio::main]
 async fn main() {
+    init_tracing();
+
     let pg_pool = configure_postgresql().await;
     let redis_conn = Arc::new(RwLock::new(configure_redis()));
 
