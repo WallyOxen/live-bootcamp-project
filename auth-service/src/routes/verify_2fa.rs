@@ -41,7 +41,7 @@ pub async fn verify_2fa(
     if code_tuple.0 == login_attempt_id && code_tuple.1 == two_fa_code {
         let auth_cookie = match generate_auth_cookie(&email) {
             Ok(cookie) => cookie,
-            Err(_) => return (jar, Err(AuthAPIError::UnexpectedError)),
+            Err(e) => return (jar, Err(AuthAPIError::UnexpectedError(e.into()))),
         };
 
         match two_fa_code_store.remove_code(&email).await {
@@ -50,7 +50,7 @@ pub async fn verify_2fa(
 
                 (updated_jar, Ok(StatusCode::OK))
             }
-            Err(_) => (jar, Err(AuthAPIError::UnexpectedError)),
+            Err(e) => (jar, Err(AuthAPIError::UnexpectedError(e.into()))),
         }
     } else {
         (jar, Err(AuthAPIError::IncorrectCredentials))

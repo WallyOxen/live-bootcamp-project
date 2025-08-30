@@ -1,7 +1,9 @@
 use axum_extra::extract::cookie::{Cookie, SameSite};
 use chrono::Utc;
+use color_eyre::Report;
 use jsonwebtoken::{decode, encode, DecodingKey, EncodingKey, Validation};
 use serde::{Deserialize, Serialize};
+use thiserror::Error;
 
 use crate::{app_state::BannedTokenStoreType, domain::email::Email};
 
@@ -24,9 +26,11 @@ fn create_auth_cookie(token: String) -> Cookie<'static> {
     cookie
 }
 
-#[derive(Debug)]
+#[derive(Debug, Error)]
 pub enum GenerateTokenError {
+    #[error("Token error")]
     TokenError(jsonwebtoken::errors::Error),
+    #[error("Unexpected error")]
     UnexpectedError,
 }
 

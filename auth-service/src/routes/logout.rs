@@ -26,7 +26,7 @@ pub async fn logout(
     let mut banned_token_store = state.banned_token_store.write().await;
     match banned_token_store.add_token(token).await {
         Ok(_) => (),
-        Err(_) => return (jar, Err(AuthAPIError::UnexpectedError)),
+        Err(e) => return (jar, Err(AuthAPIError::UnexpectedError(e.into()))),
     }
 
     let updated_jar = jar.remove(JWT_COOKIE_NAME);

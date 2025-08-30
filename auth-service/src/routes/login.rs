@@ -1,5 +1,6 @@
 use axum::{extract::State, http::StatusCode, response::IntoResponse, Json};
 use axum_extra::extract::CookieJar;
+use color_eyre::eyre::eyre;
 use rand::Rng;
 use serde::{Deserialize, Serialize};
 
@@ -55,12 +56,12 @@ async fn handle_2fa(
 ) {
     let login_attempt_id = match LoginAttemptId::parse(uuid::Uuid::new_v4().to_string()) {
         Ok(id) => id,
-        Err(_) => return (jar, Err(AuthAPIError::UnexpectedError)),
+        Err(e) => return (jar, Err(AuthAPIError::UnexpectedError(eyre!(e)))),
     };
     let two_fa_code =
         match TwoFACode::parse(format!("{:06}", rand::thread_rng().gen_range(0..100000))) {
             Ok(code) => code,
-            Err(_) => return (jar, Err(AuthAPIError::UnexpectedError)),
+            Err(e) => return (jar, Err(AuthAPIError::UnexpectedError(eyre!(e)))),
         };
 
     let mut two_fa_code_store = state.two_fa_code_store.write().await;
@@ -97,10 +98,10 @@ async fn handle_2fa(
                         )),
                     );
                 }
-                Err(_) => return (jar, Err(AuthAPIError::UnexpectedError)),
+                Err(e) => return (jar, Err(AuthAPIError::UnexpectedError(eyre!(e)))),
             }
         }
-        Err(_) => return (jar, Err(AuthAPIError::UnexpectedError)),
+        Err(e) => return (jar, Err(AuthAPIError::UnexpectedError(e.into()))),
     }
 }
 
@@ -113,7 +114,7 @@ async fn handle_no_2fa(
 ) {
     let auth_cookie = match generate_auth_cookie(&email) {
         Ok(cookie) => cookie,
-        Err(_) => return (jar, Err(AuthAPIError::UnexpectedError)),
+        Err(e) => return (jar, Err(AuthAPIError::UnexpectedError(e.into()))),
     };
 
     let updated_jar = jar.add(auth_cookie);

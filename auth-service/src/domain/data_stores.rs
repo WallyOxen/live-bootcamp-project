@@ -1,4 +1,6 @@
+use color_eyre::eyre::Report;
 use serde::{Deserialize, Serialize};
+use thiserror::Error;
 use uuid::Uuid;
 
 use crate::domain::{email::Email, password::Password};
@@ -19,17 +21,43 @@ pub trait BannedTokenStore {
     async fn contains_token(&self, token: String) -> Result<bool, BannedTokenStoreError>;
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, Error)]
 pub enum UserStoreError {
+    #[error("User already exists")]
     UserAlreadyExists,
+    #[error("User not found")]
     UserNotFound,
+    #[error("Inavalid Credentials")]
     InvalidCredentials,
+    #[error("Unepected error")]
+    UnexpectedError(#[source] Report),
+}
+
+impl PartialEq for UserStoreError {
+    fn eq(&self, other: &Self) -> bool {
+        matches!(
+            (self, other),
+            (Self::UserAlreadyExists, Self::UserAlreadyExists)
+                | (Self::UserNotFound, Self::UserNotFound)
+                | (Self::InvalidCredentials, Self::InvalidCredentials)
+                | (Self::UnexpectedError(_), Self::UnexpectedError(_))
+        )
+    }
+}
+
+#[derive(Debug, Error)]
+pub enum BannedTokenStoreError {
+    #[error("Unexpected error")]
     UnexpectedError,
 }
 
-#[derive(Debug, PartialEq)]
-pub enum BannedTokenStoreError {
-    UnexpectedError,
+impl PartialEq for BannedTokenStoreError {
+    fn eq(&self, other: &Self) -> bool {
+        matches!(
+            (self, other),
+            (Self::UnexpectedError, Self::UnexpectedError)
+        )
+    }
 }
 
 #[async_trait::async_trait]
@@ -47,10 +75,22 @@ pub trait TwoFACodeStore {
     ) -> Result<(LoginAttemptId, TwoFACode), TwoFACodeStoreError>;
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, Error)]
 pub enum TwoFACodeStoreError {
+    #[error("Login attempt id not found")]
     LoginAttemptIdNotFound,
+    #[error("Unexpected error")]
     UnexpectedError,
+}
+
+impl PartialEq for TwoFACodeStoreError {
+    fn eq(&self, other: &Self) -> bool {
+        matches!(
+            (self, other),
+            (Self::LoginAttemptIdNotFound, Self::LoginAttemptIdNotFound)
+                | (Self::UnexpectedError, Self::UnexpectedError)
+        )
+    }
 }
 
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
