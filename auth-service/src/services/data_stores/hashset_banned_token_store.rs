@@ -1,5 +1,7 @@
 use std::collections::HashSet;
 
+use color_eyre::eyre::eyre;
+
 use crate::domain::data_stores::{BannedTokenStore, BannedTokenStoreError};
 
 #[derive(Default)]
@@ -13,7 +15,9 @@ impl BannedTokenStore for HashsetBannedTokenStore {
         if self.tokens.insert(token) == true {
             Ok(())
         } else {
-            Err(BannedTokenStoreError::UnexpectedError)
+            Err(BannedTokenStoreError::UnexpectedError(eyre!(
+                "failed to insert banned token into hashset banned token store"
+            )))
         }
     }
 

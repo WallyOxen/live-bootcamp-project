@@ -1,7 +1,6 @@
-use color_eyre::eyre::Report;
+use color_eyre::eyre::{eyre, Context, Report, Result};
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
-use uuid::Uuid;
 
 use crate::domain::{email::Email, password::Password};
 
@@ -48,14 +47,14 @@ impl PartialEq for UserStoreError {
 #[derive(Debug, Error)]
 pub enum BannedTokenStoreError {
     #[error("Unexpected error")]
-    UnexpectedError,
+    UnexpectedError(#[source] Report),
 }
 
 impl PartialEq for BannedTokenStoreError {
     fn eq(&self, other: &Self) -> bool {
         matches!(
             (self, other),
-            (Self::UnexpectedError, Self::UnexpectedError)
+            (Self::UnexpectedError(_), Self::UnexpectedError(_))
         )
     }
 }
@@ -80,7 +79,7 @@ pub enum TwoFACodeStoreError {
     #[error("Login attempt id not found")]
     LoginAttemptIdNotFound,
     #[error("Unexpected error")]
-    UnexpectedError,
+    UnexpectedError(#[source] Report),
 }
 
 impl PartialEq for TwoFACodeStoreError {
@@ -88,7 +87,7 @@ impl PartialEq for TwoFACodeStoreError {
         matches!(
             (self, other),
             (Self::LoginAttemptIdNotFound, Self::LoginAttemptIdNotFound)
-                | (Self::UnexpectedError, Self::UnexpectedError)
+                | (Self::UnexpectedError(_), Self::UnexpectedError(_))
         )
     }
 }
@@ -97,11 +96,10 @@ impl PartialEq for TwoFACodeStoreError {
 pub struct LoginAttemptId(String);
 
 impl LoginAttemptId {
-    pub fn parse(id: String) -> Result<Self, String> {
-        match Uuid::parse_str(&id) {
-            Ok(_) => Ok(Self(id)),
-            Err(_) => Err(format!("Unable to parse string {} into UUID", id)),
-        }
+    pub fn parse(id: String) -> Result<Self> {
+        let parsed_id = uuid::Uuid::parse_str(&id).wrap_err("Invalid login attempt id")?;
+
+        Ok(Self(parsed_id.to_string()))
     }
 }
 
@@ -115,10 +113,13 @@ impl AsRef<str> for LoginAttemptId {
 pub struct TwoFACode(String);
 
 impl TwoFACode {
-    pub fn parse(code: String) -> Result<Self, String> {
-        match code.parse::<u64>() {
-            Ok(_) if code.len() == 6 => Ok(Self(code)),
-            _ => Err("Code must be exactly 6 digits".to_owned()),
+    pub fn parse(code: String) -> Result<Self> {
+        let code_as_u32 = code.parse::<u32>().wrap_err("Invalide 2FA code")?;
+
+        if (100_000..=999_999).contains(&code_as_u32) {
+            Ok(Self(code))
+        } else {
+            Err(eyre!("Invalide 2FA code"))
         }
     }
 }

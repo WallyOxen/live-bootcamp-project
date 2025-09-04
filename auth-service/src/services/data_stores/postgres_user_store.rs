@@ -102,7 +102,6 @@ async fn verify_password_hash(
     expected_password_hash: String,
     password_candidate: String,
 ) -> Result<()> {
-    // Changed!
     let current_span: tracing::Span = tracing::Span::current();
     let result = tokio::task::spawn_blocking(move || {
         current_span.in_scope(|| {
@@ -121,7 +120,6 @@ async fn verify_password_hash(
 
 #[tracing::instrument(name = "Computing password hash", skip_all)]
 async fn compute_password_hash(password: String) -> Result<String> {
-    // Changed!
     let current_span: tracing::Span = tracing::Span::current();
 
     let result = tokio::task::spawn_blocking(move || {

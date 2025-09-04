@@ -1,5 +1,7 @@
 use std::collections::HashMap;
 
+use color_eyre::eyre::eyre;
+
 use crate::domain::{
     data_stores::{LoginAttemptId, TwoFACode, TwoFACodeStore, TwoFACodeStoreError},
     Email,
@@ -23,7 +25,9 @@ impl TwoFACodeStore for HashmapTwoFACodeStore {
         }
 
         match self.codes.insert(email, (login_attempt_id, code)) {
-            Some(_) => Err(TwoFACodeStoreError::UnexpectedError),
+            Some(_) => Err(TwoFACodeStoreError::UnexpectedError(eyre!(
+                "failed to insert code into hashset two fa code store"
+            ))),
             None => Ok(()),
         }
     }
