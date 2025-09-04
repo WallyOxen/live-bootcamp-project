@@ -45,7 +45,7 @@ impl TestApp {
         let banned_token_store =
             Arc::new(RwLock::new(RedisBannedTokenStore::new(redis_conn.clone())));
         let two_fa_code_store = Arc::new(RwLock::new(RedisTwoFACodeStore::new(redis_conn.clone())));
-        let email_client = Arc::new(RwLock::new(MockEmailClient));
+        let email_client = Arc::new(MockEmailClient);
         let app_state = AppState {
             user_store: Arc::new(RwLock::new(user_store)),
             banned_token_store: banned_token_store.clone(),

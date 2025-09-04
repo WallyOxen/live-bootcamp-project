@@ -2,7 +2,7 @@ use std::hash::Hash;
 
 use color_eyre::eyre::{eyre, Result};
 use secrecy::{ExposeSecret, Secret};
-use validator::ValidateEmail;
+use validator::validate_email;
 
 #[derive(Clone, Debug)]
 pub struct Email(Secret<String>);
@@ -23,7 +23,7 @@ impl Eq for Email {}
 
 impl Email {
     pub fn parse(s: Secret<String>) -> Result<Self> {
-        if s.expose_secret().validate_email() {
+        if validate_email(s.expose_secret()) {
             Ok(Self(s))
         } else {
             Err(eyre!("{} is not a valid email", s.expose_secret()))

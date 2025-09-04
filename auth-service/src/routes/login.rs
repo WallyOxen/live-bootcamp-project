@@ -83,12 +83,10 @@ async fn handle_2fa(
         Ok(_) => {
             match state
                 .email_client
-                .read()
-                .await
                 .send_email(
                     &email,
                     "Two Factor Authentication Code",
-                    &format!("Your code is: {:#?}", two_fa_code),
+                    &format!("Your code is: {}", two_fa_code.as_ref().expose_secret()),
                 )
                 .await
             {
