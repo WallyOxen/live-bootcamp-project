@@ -48,14 +48,16 @@ impl UserStore for HashmapUserStore {
 
 #[cfg(test)]
 mod tests {
+    use secrecy::Secret;
+
     use super::*;
 
     #[tokio::test]
     async fn add_user_should_succeed() {
         let mut user_store = HashmapUserStore::default();
         let user = User::new(
-            Email::parse("test@test.com".to_owned()).unwrap(),
-            Password::parse("test123456".to_owned()).unwrap(),
+            Email::parse(Secret::new("test@test.com".to_owned())).unwrap(),
+            Password::parse(Secret::new("test123456".to_owned())).unwrap(),
             false,
         );
         let result = user_store.add_user(user).await;
@@ -66,16 +68,16 @@ mod tests {
     async fn add_user_should_return_error_for_same_email() {
         let mut user_store = HashmapUserStore::default();
         let user = User::new(
-            Email::parse("test@test.com".to_owned()).unwrap(),
-            Password::parse("test123456".to_owned()).unwrap(),
+            Email::parse(Secret::new("test@test.com".to_owned())).unwrap(),
+            Password::parse(Secret::new("test123456".to_owned())).unwrap(),
             false,
         );
         let result = user_store.add_user(user).await;
         assert_eq!(result, Ok(()));
 
         let user2 = User::new(
-            Email::parse("test@test.com".to_owned()).unwrap(),
-            Password::parse("abc123456".to_owned()).unwrap(),
+            Email::parse(Secret::new("test@test.com".to_owned())).unwrap(),
+            Password::parse(Secret::new("abc123456".to_owned())).unwrap(),
             true,
         );
         let result2 = user_store.add_user(user2).await;
@@ -85,7 +87,7 @@ mod tests {
     #[tokio::test]
     async fn get_user_should_return_not_found() {
         let user_store = HashmapUserStore::default();
-        let email = Email::parse("test@test.com".to_owned()).unwrap();
+        let email = Email::parse(Secret::new("test@test.com".to_owned())).unwrap();
 
         let result = user_store.get_user(&email).await;
         assert_eq!(result, Err(UserStoreError::UserNotFound));
@@ -94,11 +96,11 @@ mod tests {
     #[tokio::test]
     async fn get_user_should_return_user() {
         let mut user_store = HashmapUserStore::default();
-        let email = "test@test.com".to_owned();
+        let email = Secret::new("test@test.com".to_owned());
 
         let user = User::new(
             Email::parse(email.clone()).unwrap(),
-            Password::parse("abc123456".to_owned()).unwrap(),
+            Password::parse(Secret::new("abc123456".to_owned())).unwrap(),
             true,
         );
         if let Ok(_) = user_store.add_user(user.clone()).await {
@@ -110,8 +112,8 @@ mod tests {
     #[tokio::test]
     async fn validate_user_should_succeed() {
         let mut user_store = HashmapUserStore::default();
-        let email = "test@test.com".to_owned();
-        let password = "abc123456".to_owned();
+        let email = Secret::new("test@test.com".to_owned());
+        let password = Secret::new("abc123456".to_owned());
         let user = User::new(
             Email::parse(email.clone()).unwrap(),
             Password::parse(password.clone()).unwrap(),
@@ -131,8 +133,8 @@ mod tests {
     #[tokio::test]
     async fn validate_user_should_return_invalid_cred_error() {
         let mut user_store = HashmapUserStore::default();
-        let email = "test@test.com".to_owned();
-        let password = "abc123456".to_owned();
+        let email = Secret::new("test@test.com".to_owned());
+        let password = Secret::new("abc123456".to_owned());
         let user = User::new(
             Email::parse(email.clone()).unwrap(),
             Password::parse(password).unwrap(),
@@ -142,7 +144,7 @@ mod tests {
             let result = user_store
                 .validate_user(
                     &Email::parse(email).unwrap(),
-                    &Password::parse("abc654321".to_owned()).unwrap(),
+                    &Password::parse(Secret::new("abc654321".to_owned())).unwrap(),
                 )
                 .await;
             assert_eq!(result, Err(UserStoreError::InvalidCredentials));
@@ -152,8 +154,8 @@ mod tests {
     #[tokio::test]
     async fn validate_user_should_return_user_not_found_error() {
         let mut user_store = HashmapUserStore::default();
-        let email = "test@test.com".to_owned();
-        let password = "abc123456".to_owned();
+        let email = Secret::new("test@test.com".to_owned());
+        let password = Secret::new("abc123456".to_owned());
         let user = User::new(
             Email::parse(email).unwrap(),
             Password::parse(password.clone()).unwrap(),
@@ -162,7 +164,7 @@ mod tests {
         if let Ok(_) = user_store.add_user(user).await {
             let result = user_store
                 .validate_user(
-                    &Email::parse("abc@test.com".to_owned()).unwrap(),
+                    &Email::parse(Secret::new("abc@test.com".to_owned())).unwrap(),
                     &Password::parse(password).unwrap(),
                 )
                 .await;

@@ -5,6 +5,7 @@ use auth_service::{
     routes::TwoFactorAuthResponse,
     utils::constants::JWT_COOKIE_NAME,
 };
+use secrecy::{ExposeSecret, Secret};
 use serde_json::json;
 
 #[tokio::test]
@@ -34,7 +35,7 @@ async fn should_return_422_if_malformed_input() {
         }),
         json!({
             "email": random_email,
-            "loginAttemptId": LoginAttemptId::parse("d5783dff-c1b4-4ae3-81c6-cb71674a0d1e".to_owned()).unwrap()
+            "loginAttemptId": LoginAttemptId::parse(Secret::new("d5783dff-c1b4-4ae3-81c6-cb71674a0d1e".to_owned())).unwrap().as_ref().expose_secret()
         }),
     ];
 
@@ -135,20 +136,23 @@ async fn should_return_401_if_old_code() {
 
     assert_eq!(json_body.message, "2FA required".to_owned());
 
-    let email = Email::parse(random_email.clone()).unwrap();
+    let email = Email::parse(Secret::new(random_email.clone())).unwrap();
 
     let result = app.two_fa_code_store.read().await.get_code(&email).await;
 
     if let Ok((login_attempt_id, two_fa_code)) = result {
-        assert_eq!(json_body.login_attempt_id, login_attempt_id);
+        assert_eq!(
+            json_body.login_attempt_id,
+            login_attempt_id.as_ref().expose_secret().to_owned()
+        );
 
         let _ = app.post_login(&login_body).await;
 
         let response = app
             .post_verify_2fa(&json!({
                 "email": random_email,
-                "loginAttemptId": login_attempt_id,
-                "2FACode": two_fa_code
+                "loginAttemptId": login_attempt_id.as_ref().expose_secret(),
+                "2FACode": two_fa_code.as_ref().expose_secret()
             }))
             .await;
 
@@ -190,18 +194,21 @@ async fn should_return_200_if_correct_code() {
 
     assert_eq!(json_body.message, "2FA required".to_owned());
 
-    let email = Email::parse(random_email.clone()).unwrap();
+    let email = Email::parse(Secret::new(random_email.clone())).unwrap();
 
     let result = app.two_fa_code_store.read().await.get_code(&email).await;
 
     if let Ok((login_attempt_id, two_fa_code)) = result {
-        assert_eq!(json_body.login_attempt_id, login_attempt_id);
+        assert_eq!(
+            json_body.login_attempt_id,
+            login_attempt_id.as_ref().expose_secret().to_owned()
+        );
 
         let response = app
             .post_verify_2fa(&json!({
                 "email": random_email,
-                "loginAttemptId": login_attempt_id,
-                "2FACode": two_fa_code
+                "loginAttemptId": login_attempt_id.as_ref().expose_secret(),
+                "2FACode": two_fa_code.as_ref().expose_secret()
             }))
             .await;
 
@@ -250,18 +257,21 @@ async fn should_return_401_if_same_code_twice() {
 
     assert_eq!(json_body.message, "2FA required".to_owned());
 
-    let email = Email::parse(random_email.clone()).unwrap();
+    let email = Email::parse(Secret::new(random_email.clone())).unwrap();
 
     let result = app.two_fa_code_store.read().await.get_code(&email).await;
 
     if let Ok((login_attempt_id, two_fa_code)) = result {
-        assert_eq!(json_body.login_attempt_id, login_attempt_id);
+        assert_eq!(
+            json_body.login_attempt_id,
+            login_attempt_id.as_ref().expose_secret().to_owned()
+        );
 
         let response = app
             .post_verify_2fa(&json!({
                 "email": random_email,
-                "loginAttemptId": login_attempt_id,
-                "2FACode": two_fa_code
+                "loginAttemptId": login_attempt_id.as_ref().expose_secret(),
+                "2FACode": two_fa_code.as_ref().expose_secret()
             }))
             .await;
 
@@ -277,8 +287,8 @@ async fn should_return_401_if_same_code_twice() {
         let response = app
             .post_verify_2fa(&json!({
                 "email": random_email,
-                "loginAttemptId": login_attempt_id,
-                "2FACode": two_fa_code
+                "loginAttemptId": login_attempt_id.as_ref().expose_secret(),
+                "2FACode": two_fa_code.as_ref().expose_secret()
             }))
             .await;
 

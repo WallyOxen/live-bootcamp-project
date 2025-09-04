@@ -1,5 +1,6 @@
 use color_eyre::eyre::{eyre, Context, Report, Result};
-use serde::{Deserialize, Serialize};
+use secrecy::{ExposeSecret, Secret};
+use serde::Deserialize;
 use thiserror::Error;
 
 use crate::domain::{email::Email, password::Password};
@@ -16,8 +17,8 @@ pub trait UserStore {
 
 #[async_trait::async_trait]
 pub trait BannedTokenStore {
-    async fn add_token(&mut self, token: String) -> Result<(), BannedTokenStoreError>;
-    async fn contains_token(&self, token: String) -> Result<bool, BannedTokenStoreError>;
+    async fn add_token(&mut self, token: Secret<String>) -> Result<(), BannedTokenStoreError>;
+    async fn contains_token(&self, token: Secret<String>) -> Result<bool, BannedTokenStoreError>;
 }
 
 #[derive(Debug, Error)]
@@ -92,40 +93,56 @@ impl PartialEq for TwoFACodeStoreError {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
-pub struct LoginAttemptId(String);
+#[derive(Debug, Clone, Deserialize)]
+pub struct LoginAttemptId(Secret<String>);
+
+impl PartialEq for LoginAttemptId {
+    fn eq(&self, other: &Self) -> bool {
+        self.0.expose_secret() == other.0.expose_secret()
+    }
+}
 
 impl LoginAttemptId {
-    pub fn parse(id: String) -> Result<Self> {
-        let parsed_id = uuid::Uuid::parse_str(&id).wrap_err("Invalid login attempt id")?;
+    pub fn parse(s: Secret<String>) -> Result<Self> {
+        let parsed_id =
+            uuid::Uuid::parse_str(&s.expose_secret()).wrap_err("Invalid login attempt id")?;
 
-        Ok(Self(parsed_id.to_string()))
+        Ok(Self(Secret::new(parsed_id.to_string())))
     }
 }
 
-impl AsRef<str> for LoginAttemptId {
-    fn as_ref(&self) -> &str {
-        self.0.as_ref()
+impl AsRef<Secret<String>> for LoginAttemptId {
+    fn as_ref(&self) -> &Secret<String> {
+        &self.0
     }
 }
 
-#[derive(Clone, Debug, Serialize, PartialEq)]
-pub struct TwoFACode(String);
+#[derive(Clone, Debug)]
+pub struct TwoFACode(Secret<String>);
+
+impl PartialEq for TwoFACode {
+    fn eq(&self, other: &Self) -> bool {
+        self.0.expose_secret() == other.0.expose_secret()
+    }
+}
 
 impl TwoFACode {
-    pub fn parse(code: String) -> Result<Self> {
-        let code_as_u32 = code.parse::<u32>().wrap_err("Invalide 2FA code")?;
+    pub fn parse(s: Secret<String>) -> Result<Self> {
+        let code_as_u32 = s
+            .expose_secret()
+            .parse::<u32>()
+            .wrap_err("failed to parse 2FA code to u32")?;
 
         if (100_000..=999_999).contains(&code_as_u32) {
-            Ok(Self(code))
+            Ok(Self(s))
         } else {
             Err(eyre!("Invalide 2FA code"))
         }
     }
 }
 
-impl AsRef<str> for TwoFACode {
-    fn as_ref(&self) -> &str {
-        self.0.as_ref()
+impl AsRef<Secret<String>> for TwoFACode {
+    fn as_ref(&self) -> &Secret<String> {
+        &self.0
     }
 }

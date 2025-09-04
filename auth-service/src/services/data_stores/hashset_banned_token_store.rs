@@ -1,6 +1,7 @@
 use std::collections::HashSet;
 
 use color_eyre::eyre::eyre;
+use secrecy::{ExposeSecret, Secret};
 
 use crate::domain::data_stores::{BannedTokenStore, BannedTokenStoreError};
 
@@ -11,8 +12,8 @@ pub struct HashsetBannedTokenStore {
 
 #[async_trait::async_trait]
 impl BannedTokenStore for HashsetBannedTokenStore {
-    async fn add_token(&mut self, token: String) -> Result<(), BannedTokenStoreError> {
-        if self.tokens.insert(token) == true {
+    async fn add_token(&mut self, token: Secret<String>) -> Result<(), BannedTokenStoreError> {
+        if self.tokens.insert(token.expose_secret().to_owned()) == true {
             Ok(())
         } else {
             Err(BannedTokenStoreError::UnexpectedError(eyre!(
@@ -21,8 +22,8 @@ impl BannedTokenStore for HashsetBannedTokenStore {
         }
     }
 
-    async fn contains_token(&self, token: String) -> Result<bool, BannedTokenStoreError> {
-        match self.tokens.get(&token) {
+    async fn contains_token(&self, token: Secret<String>) -> Result<bool, BannedTokenStoreError> {
+        match self.tokens.get(token.expose_secret()) {
             Some(_) => Ok(true),
             None => Ok(false),
         }
@@ -36,7 +37,9 @@ mod tests {
     #[tokio::test]
     async fn add_token_should_succeed() {
         let mut banned_token_store = HashsetBannedTokenStore::default();
-        let result = banned_token_store.add_token("TestToken".to_string()).await;
+        let result = banned_token_store
+            .add_token(Secret::new("TestToken".to_string()))
+            .await;
         assert_eq!(result, Ok(()))
     }
 
@@ -44,13 +47,13 @@ mod tests {
     async fn get_token_should_return_true_if_token_exists() {
         let mut banned_token_store = HashsetBannedTokenStore::default();
         let result = banned_token_store
-            .add_token("TestToken".to_string())
+            .add_token(Secret::new("TestToken".to_string()))
             .await
             .unwrap();
         assert_eq!(result, ());
 
         let result = banned_token_store
-            .contains_token("TestToken".to_string())
+            .contains_token(Secret::new("TestToken".to_string()))
             .await;
         assert_eq!(result, Ok(true));
     }
@@ -60,7 +63,7 @@ mod tests {
         let banned_token_store = HashsetBannedTokenStore::default();
 
         let result = banned_token_store
-            .contains_token("TestToken".to_string())
+            .contains_token(Secret::new("TestToken".to_string()))
             .await;
         assert_eq!(result, Ok(false));
     }
